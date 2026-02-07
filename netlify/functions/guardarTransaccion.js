@@ -20,6 +20,3 @@ exports.handler = async (event) => {
   }
 };
 
-
-// deploy force test
-
