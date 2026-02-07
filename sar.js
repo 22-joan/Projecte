@@ -1,5 +1,5 @@
 // -------------------------
-// Variables y URL
+// Variables y URLs
 // -------------------------
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSejXPG6m6vhW8RbLys5jFlI3rA25JX-0UF3rcCcrqh81v4s3zHQtIKDBb9fEsoEOl1i8-sDcCOOzcN/pub?output=xlsx";
 const BACKEND_URL = "https://cheery-donut-456e7d.netlify.app/.netlify/functions/guardarTransaccion";
@@ -21,13 +21,30 @@ function calcularRisc(importEuro) {
 }
 
 // -------------------------
-// Cargar datos de Google Sheets
+// Enviar una transacción al backend
+// -------------------------
+async function enviarTransaccion(datos) {
+  try {
+    const res = await fetch(BACKEND_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(datos)
+    });
+    const data = await res.json();
+    console.log("Backend dice:", data);
+  } catch (err) {
+    console.error("Error enviando datos:", err);
+  }
+}
+
+// -------------------------
+// Cargar datos de Google Sheets y enviar al backend
 // -------------------------
 async function cargarSARdeExcel() {
   const estat = document.getElementById("estat");
   const tbody = document.querySelector("#taula-sar tbody");
 
-  estat.textContent = "⏳ Cargando datos de Sheets...";
+  estat.textContent = "⏳ Cargando datos de Sheets y enviando al backend...";
 
   try {
     const res = await fetch(SHEET_URL);
@@ -46,14 +63,15 @@ async function cargarSARdeExcel() {
       comptador[nom] = (comptador[nom] || 0) + 1;
     });
 
-    datos.forEach((fila, index) => {
+    for (let index = 0; index < datos.length; index++) {
+      const fila = datos[index];
       const nom = fila.Nom || "—";
       const importEuro = parseFloat(fila.Quantitat) || 0;
       const sar = generarSAR(index);
       const risc = calcularRisc(importEuro);
       const pep = comptador[nom] > 3 ? "Sí" : "No";
 
-      dadesSAR.push({
+      const registro = {
         sar,
         nom,
         importEuro,
@@ -66,8 +84,12 @@ async function cargarSARdeExcel() {
         paisOrigen: fila["Pais Origen"] || "—",
         paisDesti: fila["Pais Desti"] || "—",
         tipusTransaccio: fila["Tipus de Transacció"] || "—"
-      });
+      };
 
+      // Guardamos localmente para PDF y tabla
+      dadesSAR.push(registro);
+
+      // Actualizar tabla en HTML
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${sar}</td>
@@ -77,32 +99,22 @@ async function cargarSARdeExcel() {
         <td>${pep}</td>
       `;
       tbody.appendChild(tr);
-    });
 
-    estat.textContent = "✅ Datos de Sheets cargados correctamente";
+      // Enviar al backend
+      await enviarTransaccion({
+        nom: registro.nom,
+        quantitat: registro.importEuro,
+        paisOrigen: registro.paisOrigen,
+        paisDesti: registro.paisDesti,
+        tipus: registro.tipusTransaccio
+      });
+    }
+
+    estat.textContent = "✅ Datos de Sheets cargados y enviados correctamente";
 
   } catch (error) {
     console.error(error);
     estat.textContent = "❌ Error cargando Sheets";
-  }
-}
-
-// -------------------------
-// Enviar una nueva transacción al backend
-// -------------------------
-async function enviarTransaccion(datos) {
-  try {
-    const res = await fetch(BACKEND_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(datos)
-    });
-    const data = await res.json();
-    console.log("Backend dice:", data);
-    alert("Transacción enviada correctamente");
-  } catch (err) {
-    console.error("Error enviando datos:", err);
-    alert("Error al enviar la transacción");
   }
 }
 
