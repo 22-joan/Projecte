@@ -1,8 +1,14 @@
-const SHEET_URL =
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vSejXPG6m6vhW8RbLys5jFlI3rA25JX-0UF3rcCcrqh81v4s3zHQtIKDBb9fEsoEOl1i8-sDcCOOzcN/pub?output=xlsx";
+// -------------------------
+// Variables y URL
+// -------------------------
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSejXPG6m6vhW8RbLys5jFlI3rA25JX-0UF3rcCcrqh81v4s3zHQtIKDBb9fEsoEOl1i8-sDcCOOzcN/pub?output=xlsx";
+const BACKEND_URL = "https://cheery-donut-456e7d.netlify.app/.netlify/functions/guardarTransaccion";
 
 let dadesSAR = [];
 
+// -------------------------
+// Funciones auxiliares
+// -------------------------
 function generarSAR(index) {
   const any = new Date().getFullYear();
   return `SAR-${any}-${String(index + 1).padStart(4, "0")}`;
@@ -14,11 +20,14 @@ function calcularRisc(importEuro) {
   return "Baix risc";
 }
 
-async function carregarSAR() {
+// -------------------------
+// Cargar datos de Google Sheets
+// -------------------------
+async function cargarSARdeExcel() {
   const estat = document.getElementById("estat");
   const tbody = document.querySelector("#taula-sar tbody");
 
-  estat.textContent = "⏳ Carregant dades...";
+  estat.textContent = "⏳ Cargando datos de Sheets...";
 
   try {
     const res = await fetch(SHEET_URL);
@@ -26,18 +35,18 @@ async function carregarSAR() {
     const data = await blob.arrayBuffer();
     const workbook = XLSX.read(data, { type: "array" });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const dades = XLSX.utils.sheet_to_json(sheet);
+    const datos = XLSX.utils.sheet_to_json(sheet);
 
     tbody.innerHTML = "";
     dadesSAR = [];
 
     const comptador = {};
-    dades.forEach(f => {
+    datos.forEach(f => {
       const nom = f.Nom || "Desconegut";
       comptador[nom] = (comptador[nom] || 0) + 1;
     });
 
-    dades.forEach((fila, index) => {
+    datos.forEach((fila, index) => {
       const nom = fila.Nom || "—";
       const importEuro = parseFloat(fila.Quantitat) || 0;
       const sar = generarSAR(index);
@@ -70,14 +79,78 @@ async function carregarSAR() {
       tbody.appendChild(tr);
     });
 
-    estat.textContent = "✅ Informe SAR generat correctament";
+    estat.textContent = "✅ Datos de Sheets cargados correctamente";
 
   } catch (error) {
     console.error(error);
-    estat.textContent = "❌ Error carregant Formulari 2";
+    estat.textContent = "❌ Error cargando Sheets";
   }
 }
 
+// -------------------------
+// Enviar una nueva transacción al backend
+// -------------------------
+async function enviarTransaccion(datos) {
+  try {
+    const res = await fetch(BACKEND_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(datos)
+    });
+    const data = await res.json();
+    console.log("Backend dice:", data);
+    alert("Transacción enviada correctamente");
+  } catch (err) {
+    console.error("Error enviando datos:", err);
+    alert("Error al enviar la transacción");
+  }
+}
+
+// -------------------------
+// Formulario para nuevas transacciones
+// -------------------------
+document.getElementById("form-transaccion").addEventListener("submit", (e) => {
+  e.preventDefault();
+
+  const datos = {
+    nom: document.getElementById("nombre").value,
+    quantitat: parseFloat(document.getElementById("cantidad").value),
+    paisOrigen: document.getElementById("paisOrigen").value,
+    paisDesti: document.getElementById("paisDesti").value,
+    tipus: document.getElementById("tipo").value
+  };
+
+  // Agregar a la tabla local
+  const sar = generarSAR(dadesSAR.length);
+  const risc = calcularRisc(datos.quantitat);
+  dadesSAR.push({
+    sar,
+    nom: datos.nom,
+    importEuro: datos.quantitat,
+    risc,
+    pep: "No",
+    dni: "—",
+    adreca: "—",
+    contacte: "—",
+    moneda: "EUR",
+    paisOrigen: datos.paisOrigen,
+    paisDesti: datos.paisDesti,
+    tipusTransaccio: datos.tipus
+  });
+
+  // Actualizar tabla en HTML
+  cargarSARdeExcel(); // También carga las nuevas filas locales
+
+  // Enviar al backend
+  enviarTransaccion(datos);
+
+  // Reset formulario
+  e.target.reset();
+});
+
+// -------------------------
+// Descargar PDF
+// -------------------------
 document.getElementById("descarregarPDF").addEventListener("click", () => {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
@@ -101,7 +174,7 @@ document.getElementById("descarregarPDF").addEventListener("click", () => {
     doc.text("3. Detalls de la transacció:", 14, y); y += 6;
     doc.text(`Tipus operació: ${dada.tipusTransaccio}`, 18, y); y += 6;
     doc.text(`Import: ${dada.importEuro} ${dada.moneda}`, 18, y); y += 6;
-    doc.text(`País origen: ${dada.paisOrigen}`, 18, y); y += 6;
+    doc.text(`País origen: ${dada.paisOrigen}`, 18, y) ; y += 6;
     doc.text(`País destí: ${dada.paisDesti}`, 18, y); y += 8;
 
     doc.text("4. Motiu de la sospita:", 14, y); y += 6;
@@ -116,4 +189,7 @@ document.getElementById("descarregarPDF").addEventListener("click", () => {
   doc.save("Informe_SAR_SEPBLAC.pdf");
 });
 
-carregarSAR();
+// -------------------------
+// Inicialización
+// -------------------------
+cargarSARdeExcel();
