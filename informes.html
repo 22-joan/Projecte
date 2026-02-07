@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Informe Google Sheets</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<script>
+  if (localStorage.getItem("loggedIn") !== "true") {
+    window.location.href = "login.html";
+  }
+</script>
+
+<h1>📊 Informe Google Sheets > 10.000</h1>
+
+<div class="nav">
+  <a href="index.html">🏠 Dashboard</a>
+  <a href="bitcoin.html">💰 Informe Bitcoin</a>
+  <button id="logoutBtn">Cerrar sesión</button>
+</div>
+
+<button id="descargarPDF">📄 Descargar PDF del informe</button>
+
+<div class="tabla-container">
+  <table id="tabla-informes">
+    <thead>
+      <tr>
+        <th>Marca temporal</th>
+        <th>Nom</th>
+        <th>Quantitat</th>
+        <th>Tipus de Transacció</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<p id="estado-informes">⏳ Cargando datos...</p>
+
+<script>
+const url = "https://opensheet.elk.sh/1mEB2nrolceJJD8Bu6HrvMNh19CTzYLlSXxbH8ckIjP4/Respuestas%20de%20formulario%201";
+let transaccionesFiltradas = [];
+
+async function cargarInformes() {
+  const estado = document.getElementById("estado-informes");
+  const tablaBody = document.querySelector("#tabla-informes tbody");
+  estado.textContent = "⏳ Cargando datos...";
+
+  try {
+    const res = await fetch(url);
+    const datos = await res.json();
+
+    transaccionesFiltradas = datos.filter(fila => parseFloat(fila.Quantitat) > 10000);
+    tablaBody.innerHTML = "";
+
+    if (transaccionesFiltradas.length === 0) {
+      tablaBody.innerHTML = "<tr><td colspan='4'>No hay transacciones mayores a 10.000.</td></tr>";
+    } else {
+      transaccionesFiltradas.forEach(fila => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${fila["Marca temporal"] || "—"}</td>
+          <td>${fila.Nom || "—"}</td>
+          <td>${fila.Quantitat || "—"}</td>
+          <td>${fila["Tipus de Transacció"] || "—"}</td>
+        `;
+        tablaBody.appendChild(tr);
+      });
+    }
+
+    estado.textContent = "✅ Informe actualizado: " + new Date().toLocaleTimeString();
+  } catch (err) {
+    console.error("Error al cargar datos:", err);
+    estado.textContent = "❌ Error al cargar los informes.";
+  }
+}
+
+cargarInformes();
+setInterval(cargarInformes, 30000);
+
+document.getElementById("logoutBtn").addEventListener("click", () => {
+  localStorage.removeItem("loggedIn");
+  window.location.href = "login.html";
+});
+
+document.getElementById("descargarPDF").addEventListener("click", () => {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  const textoBase = `Informe enviado al SEPBLAC:
+
+Este informe contiene la identificación de las personas involucradas en la operación y los datos de la operación (cuantía).
+
+Transacciones mayores a 10.000:\n\n`;
+
+  doc.setFontSize(12);
+  doc.text(textoBase, 14, 20, { maxWidth: 180 });
+
+  let y = 50;
+  transaccionesFiltradas.forEach((fila, index) => {
+    const linea = `${index + 1}. Nombre: ${fila.Nom || "—"} | Cantidad: ${fila.Quantitat || "—"}`;
+    doc.text(linea, 14, y, { maxWidth: 180 });
+    y += 8;
+    if (y > 280) {
+      doc.addPage();
+      y = 20;
+    }
+  });
+
+  doc.save("Informe_SEPBLAC.pdf");
+});
+</script>
+
+</body>
+</html>

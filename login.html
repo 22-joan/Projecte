@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar Sesión</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="login-container">
+  <h2>🔐 Iniciar Sesión</h2>
+  <form id="loginForm">
+    <input type="text" id="username" placeholder="Usuario" required>
+    <input type="password" id="password" placeholder="Contraseña" required>
+    <button type="submit">Entrar</button>
+  </form>
+  <p id="loginError"></p>
+</div>
+
+<script>
+  const form = document.getElementById("loginForm");
+  const errorMsg = document.getElementById("loginError");
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+
+    const user = document.getElementById("username").value.trim();
+    const pass = document.getElementById("password").value.trim();
+
+    // 👇 Inici sessio
+    const USER_OK = "admin";
+    const PASS_OK = "1234";
+
+    if (user === USER_OK && pass === PASS_OK) {
+      localStorage.setItem("loggedIn", "true");
+      window.location.href = "index.html";
+    } else {
+      errorMsg.textContent = "❌ Usuario o contraseña incorrectos.";
+      errorMsg.style.color = "red";
+    }
+  });
+</script>
+
+</body>
+</html>
+

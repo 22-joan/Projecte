@@ -1,0 +1,155 @@
+/* ==== ESTILO GENERAL ==== */
+body {
+  font-family: "Segoe UI", sans-serif;
+  background: #f5f6fa;
+  color: #2f3640;
+  text-align: center;
+  padding: 20px;
+  margin: 0;
+}
+
+h1 {
+  color: #00a8ff;
+  margin-bottom: 10px;
+}
+
+p {
+  color: #636e72;
+}
+
+/* ==== TABLAS ==== */
+.tabla-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  overflow-x: auto;
+}
+
+table {
+  border-collapse: collapse;
+  width: 95%;
+  max-width: 900px;
+  background: white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+th {
+  background: #0097e6;
+  color: white;
+  padding: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+td {
+  border-bottom: 1px solid #dcdde1;
+  padding: 15px;
+  font-size: 14px;
+}
+
+tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+tr:hover {
+  background: #dfe6e9;
+}
+
+#estado, #estado-informes {
+  margin-top: 15px;
+  font-style: italic;
+  color: #636e72;
+}
+
+/* ==== LOGIN ==== */
+.login-container {
+  background: white;
+  width: 300px;
+  margin: 100px auto;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.login-container h2 {
+  margin-bottom: 20px;
+  color: #0097e6;
+}
+
+.login-container input {
+  width: 100%;
+  padding: 10px;
+  margin: 8px 0;
+  border: 1px solid #dcdde1;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.login-container button {
+  width: 100%;
+  padding: 10px;
+  background: #0097e6;
+  border: none;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.2s;
+}
+
+.login-container button:hover {
+  background: #00a8ff;
+}
+
+/* ==== BOTÓN DE CERRAR SESIÓN ==== */
+button#logoutBtn {
+  background: #e84118;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  margin-top: 10px;
+  transition: background 0.2s;
+}
+
+button#logoutBtn:hover {
+  background: #c23616;
+}
+
+/* ==== NAVEGACIÓN ENTRE PÁGINAS ==== */
+.nav {
+  margin: 20px;
+}
+
+.nav a {
+  color: #0097e6;
+  text-decoration: none;
+  font-weight: 600;
+  margin-right: 15px;
+  transition: color 0.2s;
+}
+
+.nav a:hover {
+  color: #00a8ff;
+  text-decoration: underline;
+}
+
+/* ==== ADICIONALES ==== */
+@media (max-width: 600px) {
+  .login-container {
+    width: 90%;
+    margin-top: 50px;
+  }
+
+  table {
+    font-size: 12px;
+  }
+
+  th, td {
+    padding: 6px;
+  }
+}

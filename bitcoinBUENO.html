@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Informe Bitcoin</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+
+<body>
+
+  <script>
+    if (localStorage.getItem("loggedIn") !== "true") {
+      window.location.href = "login.html";
+    }
+  </script>
+
+  <h1>💰 Transacciones Bitcoin en Tiempo Real (>1 BTC)</h1>
+
+  <div class="nav">
+    <a href="index.html">🏠 Dashboard</a>
+    <a href="informes.html">📊 Informe Google Sheets</a>
+    <button id="logoutBtn">Cerrar sesión</button>
+  </div>
+
+  <button id="descargarPDF">📄 Descargar informe de transacciones > 1 BTC</button>
+
+  <div class="tabla-container">
+    <table id="tabla-bitcoin">
+      <thead>
+        <tr>
+          <th>Hora</th>
+          <th>Hash</th>
+          <th>Monto (BTC)</th>
+          <th>Fee (BTC)</th>
+          <th>Inputs</th>
+          <th>Outputs</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <p id="estado-bitcoin">⏳ Cargando datos...</p>
+
+  <script>
+    let transaccionesBTC = [];
+
+    async function cargarTransacciones() {
+      const estado = document.getElementById("estado-bitcoin");
+      const tablaBody = document.querySelector("#tabla-bitcoin tbody");
+      estado.textContent = "⏳ Cargando datos...";
+
+      try {
+        const res = await fetch("https://blockchain.info/unconfirmed-transactions?format=json");
+        const data = await res.json();
+
+        transaccionesBTC = data.txs
+          .map(tx => {
+            const totalBTC = tx.out.reduce((sum, o) => sum + o.value, 0) / 1e8;
+            const feeBTC = tx.fee / 1e8;
+            const inputs = tx.inputs.length;
+            const outputs = tx.out.length;
+
+            return {
+              hora: new Date(tx.time * 1000).toLocaleTimeString(),
+              hash: tx.hash,
+              btc: totalBTC,
+              fee: feeBTC,
+              inputs: inputs,
+              outputs: outputs
+            };
+          })
+          .filter(tx => tx.btc > 1);
+
+        const mostrarEnTabla = transaccionesBTC.slice(0, 30);
+
+        tablaBody.innerHTML = "";
+
+        if (mostrarEnTabla.length === 0) {
+          tablaBody.innerHTML = "<tr><td colspan='6'>No hay transacciones > 1 BTC.</td></tr>";
+        } else {
+          mostrarEnTabla.forEach(tx => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${tx.hora}</td>
+              <td>${tx.hash}</td>
+              <td>${tx.btc.toFixed(4)}</td>
+              <td>${tx.fee.toFixed(8)}</td>
+              <td>${tx.inputs}</td>
+              <td>${tx.outputs}</td>
+            `;
+            tablaBody.appendChild(tr);
+          });
+        }
+
+        estado.textContent = "✅ Datos actualizados: " + new Date().toLocaleTimeString();
+      } catch (err) {
+        console.error(err);
+        estado.textContent = "❌ Error al cargar datos.";
+      }
+    }
+
+    cargarTransacciones();
+    setInterval(cargarTransacciones, 15000);
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      localStorage.removeItem("loggedIn");
+      window.location.href = "login.html";
+    });
+
+    document.getElementById("descargarPDF").addEventListener("click", () => {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  const textoBase = `Informe de transacciones de Bitcoin > 1 BTC\n\n`;
+  doc.setFontSize(12);
+  doc.text(textoBase, 14, 20, { maxWidth: 180 });
+
+  let y = 30; // Punto inicial
+  const lineHeight = 7;
+  const pageHeight = doc.internal.pageSize.height;
+
+  transaccionesBTC.forEach((tx, index) => {
+    // Cada transacción tendrá varias líneas
+    const lineas = [
+      `Transacción #${index + 1}`,
+      `Hora: ${tx.hora}`,
+      `Hash: ${tx.hash}`,
+      `Monto: ${tx.btc.toFixed(4)} BTC`,
+      `Fee: ${tx.fee.toFixed(8)}`,
+      `Inputs: ${tx.inputs}`,
+      `Outputs: ${tx.outputs}`,
+      "----------------------------------------"
+    ];
+
+    lineas.forEach(linea => {
+      // Si la línea se sale de la página, añade nueva
+      if (y + lineHeight > pageHeight - 20) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(linea, 14, y);
+      y += lineHeight;
+    });
+  });
+
+  doc.save("Informe_Transacciones_Bitcoin.pdf");
+});
+
+  </script>
+
+</body>
+
+</html>
+

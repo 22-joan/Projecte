@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Informe SAR SEPBLAC</title>
+  <link rel="stylesheet" href="style.css">
+
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- SheetJS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<script>
+  if (localStorage.getItem("loggedIn") !== "true") {
+    window.location.href = "login.html";
+  }
+</script>
+
+<h1>🚨 Informe SAR SEPBLAC</h1>
+<p>Informe generat automàticament a partir del Formulari 2</p>
+
+<div class="nav">
+  <a href="index.html">🏠 Dashboard</a>
+  <a href="informes.html">📊 &gt;10.000 €</a>
+  <button id="logoutBtn">Tancar sessió</button>
+</div>
+
+<button id="descarregarPDF">📄 Descarregar Informe SAR</button>
+
+<div class="tabla-container">
+  <table id="taula-sar">
+    <thead>
+      <tr>
+        <th>SAR</th>
+        <th>Client</th>
+        <th>Import</th>
+        <th>Risc</th>
+        <th>PEP</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<p id="estat">⏳ Carregant dades...</p>
+
+<script src="sar.js"></script>
+
+<script>
+  document.getElementById("logoutBtn").addEventListener("click", () => {
+    localStorage.removeItem("loggedIn");
+    window.location.href = "login.html";
+  });
+</script>
+
+</body>
+</html>
