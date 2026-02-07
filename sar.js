@@ -38,13 +38,13 @@ async function enviarTransaccion(datos) {
 }
 
 // -------------------------
-// Cargar datos de Google Sheets y enviar al backend
+// Cargar datos de Google Sheets y mostrar en tabla
 // -------------------------
 async function cargarSARdeExcel() {
   const estat = document.getElementById("estat");
   const tbody = document.querySelector("#taula-sar tbody");
 
-  estat.textContent = "⏳ Cargando datos de Sheets y enviando al backend...";
+  estat.textContent = "⏳ Cargando datos de Sheets...";
 
   try {
     const res = await fetch(SHEET_URL);
@@ -63,8 +63,7 @@ async function cargarSARdeExcel() {
       comptador[nom] = (comptador[nom] || 0) + 1;
     });
 
-    for (let index = 0; index < datos.length; index++) {
-      const fila = datos[index];
+    datos.forEach((fila, index) => {
       const nom = fila.Nom || "—";
       const importEuro = parseFloat(fila.Quantitat) || 0;
       const sar = generarSAR(index);
@@ -86,10 +85,9 @@ async function cargarSARdeExcel() {
         tipusTransaccio: fila["Tipus de Transacció"] || "—"
       };
 
-      // Guardamos localmente para PDF y tabla
       dadesSAR.push(registro);
 
-      // Actualizar tabla en HTML
+      // Tabla HTML
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${sar}</td>
@@ -99,18 +97,9 @@ async function cargarSARdeExcel() {
         <td>${pep}</td>
       `;
       tbody.appendChild(tr);
+    });
 
-      // Enviar al backend
-      await enviarTransaccion({
-        nom: registro.nom,
-        quantitat: registro.importEuro,
-        paisOrigen: registro.paisOrigen,
-        paisDesti: registro.paisDesti,
-        tipus: registro.tipusTransaccio
-      });
-    }
-
-    estat.textContent = "✅ Datos de Sheets cargados y enviados correctamente";
+    estat.textContent = "✅ Datos de Sheets cargados correctamente";
 
   } catch (error) {
     console.error(error);
@@ -132,10 +121,10 @@ document.getElementById("form-transaccion").addEventListener("submit", (e) => {
     tipus: document.getElementById("tipo").value
   };
 
-  // Agregar a la tabla local
+  // Agregar localmente
   const sar = generarSAR(dadesSAR.length);
   const risc = calcularRisc(datos.quantitat);
-  dadesSAR.push({
+  const registro = {
     sar,
     nom: datos.nom,
     importEuro: datos.quantitat,
@@ -148,10 +137,20 @@ document.getElementById("form-transaccion").addEventListener("submit", (e) => {
     paisOrigen: datos.paisOrigen,
     paisDesti: datos.paisDesti,
     tipusTransaccio: datos.tipus
-  });
+  };
+  dadesSAR.push(registro);
 
   // Actualizar tabla en HTML
-  cargarSARdeExcel(); // También carga las nuevas filas locales
+  const tbody = document.querySelector("#taula-sar tbody");
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td>${registro.sar}</td>
+    <td>${registro.nom}</td>
+    <td>${registro.importEuro.toLocaleString()} €</td>
+    <td>${registro.risc}</td>
+    <td>${registro.pep}</td>
+  `;
+  tbody.appendChild(tr);
 
   // Enviar al backend
   enviarTransaccion(datos);
@@ -181,13 +180,13 @@ document.getElementById("descarregarPDF").addEventListener("click", () => {
     doc.text(`DNI/NIE/Passaport: ${dada.dni}`, 18, y); y += 6;
     doc.text(`Adreça: ${dada.adreca}`, 18, y); y += 6;
     doc.text(`Categoria de risc: ${dada.risc}`, 18, y); y += 6;
-    doc.text(`PEP: ${dada.pep}`, 18, y); y += 8;
+    doc.text(`PEP: ${dada.pep}`, 18, y) ; y += 8;
 
     doc.text("3. Detalls de la transacció:", 14, y); y += 6;
     doc.text(`Tipus operació: ${dada.tipusTransaccio}`, 18, y); y += 6;
     doc.text(`Import: ${dada.importEuro} ${dada.moneda}`, 18, y); y += 6;
     doc.text(`País origen: ${dada.paisOrigen}`, 18, y) ; y += 6;
-    doc.text(`País destí: ${dada.paisDesti}`, 18, y); y += 8;
+    doc.text(`País destí: ${dada.paisDesti}`, 18, y) += 8;
 
     doc.text("4. Motiu de la sospita:", 14, y); y += 6;
     doc.text("Operació superior als llindars AML definits.", 18, y); y += 10;
